@@ -121,7 +121,14 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
         setupListeners();
         
         // Request focus on keyword input field after layout is complete
-        keywordEditText.post(() -> keywordEditText.requestFocus());
+        // Use a longer delay to ensure IME is ready and avoid InputConnection conflicts
+        // Note: Removed automatic focus request to prevent IME initialization conflicts
+        // User can tap the field to focus it when ready
+        // keywordEditText.postDelayed(() -> {
+        //     if (keywordEditText.isAttachedToWindow()) {
+        //         keywordEditText.requestFocus();
+        //     }
+        // }, 200);
         
         // Auto-detect current location on start
         detectCurrentLocation();
@@ -205,14 +212,22 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             }
             
             // Close dropdown completely
-            locationSpinner.post(() -> {
-                locationSpinner.dismissDropDown();
-                locationSpinner.clearFocus();
-                // Reset flag after a short delay to allow text change to complete
-                locationSearchHandler.postDelayed(() -> {
-                    isLocationItemSelected = false;
-                }, 100);
-            });
+            // Use postDelayed to avoid interfering with InputConnection
+            locationSpinner.postDelayed(() -> {
+                if (locationSpinner.isAttachedToWindow()) {
+                    locationSpinner.dismissDropDown();
+                    // Don't clear focus immediately - let IME finish first
+                    locationSpinner.postDelayed(() -> {
+                        if (locationSpinner.isAttachedToWindow()) {
+                            locationSpinner.clearFocus();
+                        }
+                        // Reset flag after a short delay to allow text change to complete
+                        locationSearchHandler.postDelayed(() -> {
+                            isLocationItemSelected = false;
+                        }, 100);
+                    }, 100);
+                }
+            }, 50);
         });
 
         // Handle text changes to trigger Google Places search
@@ -279,14 +294,8 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Keep dropdown open after text changes (prevents flickering)
-                if (locationSpinner.hasFocus() && !isLocationItemSelected) {
-                    locationSpinner.post(() -> {
-                        if (!locationSpinner.isPopupShowing()) {
-                            locationSpinner.showDropDown();
-                        }
-                    });
-                }
+                // Removed dropdown manipulation here to avoid InputConnection conflicts
+                // The dropdown will open naturally when needed via onTextChanged or user interaction
             }
         });
         
@@ -398,21 +407,29 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             pendingResults = null;
             
             // Show dropdown with results only if it's not already showing
-            locationSpinner.post(() -> {
-                if (locationSpinner.hasFocus() && !locationSpinner.isPopupShowing()) {
+            // Use postDelayed to avoid interfering with InputConnection
+            locationSpinner.postDelayed(() -> {
+                if (locationSpinner.isAttachedToWindow() && 
+                    locationSpinner.hasFocus() && 
+                    !locationSpinner.isPopupShowing()) {
                     locationSpinner.showDropDown();
                 }
-            });
+            }, 50);
         } else {
             // No results yet or empty results
             locationAdapter.updateSearchResults(new ArrayList<>());
             // Don't call setAdapter() - it causes dropdown to refresh
             
             // If still has focus, keep dropdown open with just "Current Location"
+            // Use postDelayed to avoid interfering with InputConnection
             if (locationSpinner.hasFocus() && !locationSpinner.isPopupShowing()) {
-                locationSpinner.post(() -> {
-                    locationSpinner.showDropDown();
-                });
+                locationSpinner.postDelayed(() -> {
+                    if (locationSpinner.isAttachedToWindow() && 
+                        locationSpinner.hasFocus() && 
+                        !locationSpinner.isPopupShowing()) {
+                        locationSpinner.showDropDown();
+                    }
+                }, 50);
             }
         }
     }
@@ -449,11 +466,11 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                     autocompleteHandler.removeCallbacks(autocompleteRunnable);
                 }
                 
-                // Update user input in adapter (post to avoid blocking input connection)
-                final String finalText = text;
-                keywordEditText.post(() -> {
-                    keywordAdapter.setUserInput(finalText);
-                });
+                // Update user input in adapter
+                // Do this synchronously but safely - adapter updates don't block InputConnection
+                if (keywordEditText.isAttachedToWindow()) {
+                    keywordAdapter.setUserInput(text);
+                }
 
                 // Schedule new autocomplete request after 500ms delay
                 if (text.length() > 0) {
@@ -489,15 +506,8 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Keep dropdown open after text changes (prevents flickering)
-                // Only reopen if it closed and field has focus
-                if (keywordEditText.hasFocus() && !isItemSelected) {
-                    keywordEditText.post(() -> {
-                        if (!keywordEditText.isPopupShowing()) {
-                            keywordEditText.showDropDown();
-                        }
-                    });
-                }
+                // Removed dropdown manipulation here to avoid InputConnection conflicts
+                // The dropdown will open naturally when needed via onTextChanged or user interaction
             }
         });
         
@@ -518,10 +528,18 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             pendingKeywordResults = null;
             
             // Dismiss dropdown after item selection
-            keywordEditText.post(() -> {
-                keywordEditText.dismissDropDown();
-                keywordEditText.clearFocus();
-            });
+            // Use postDelayed to avoid interfering with InputConnection
+            keywordEditText.postDelayed(() -> {
+                if (keywordEditText.isAttachedToWindow()) {
+                    keywordEditText.dismissDropDown();
+                    // Don't clear focus immediately - let IME finish first
+                    keywordEditText.postDelayed(() -> {
+                        if (keywordEditText.isAttachedToWindow()) {
+                            keywordEditText.clearFocus();
+                        }
+                    }, 100);
+                }
+            }, 50);
         });
     }
 
@@ -594,21 +612,29 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             pendingKeywordResults = null;
             
             // Show dropdown with results only if it's not already showing (prevents flickering)
-            keywordEditText.post(() -> {
-                if (keywordEditText.hasFocus() && !keywordEditText.isPopupShowing()) {
+            // Use postDelayed with longer delay to avoid interfering with InputConnection
+            keywordEditText.postDelayed(() -> {
+                if (keywordEditText.isAttachedToWindow() && 
+                    keywordEditText.hasFocus() && 
+                    !keywordEditText.isPopupShowing()) {
                     keywordEditText.showDropDown();
                 }
-            });
+            }, 150); // Longer delay to ensure IME is fully ready
         } else {
             // No results yet or empty results
             keywordAdapter.updateSuggestions(new ArrayList<>());
             // Don't call setAdapter() - it causes dropdown to refresh
             
             // If still has focus, keep dropdown open
+            // Use postDelayed with longer delay to avoid interfering with InputConnection
             if (keywordEditText.hasFocus() && !keywordEditText.isPopupShowing()) {
-                keywordEditText.post(() -> {
-                    keywordEditText.showDropDown();
-                });
+                keywordEditText.postDelayed(() -> {
+                    if (keywordEditText.isAttachedToWindow() && 
+                        keywordEditText.hasFocus() && 
+                        !keywordEditText.isPopupShowing()) {
+                        keywordEditText.showDropDown();
+                    }
+                }, 150); // Longer delay to ensure IME is fully ready
             }
         }
     }
@@ -1217,6 +1243,14 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     @Override
     protected void onResume() {
         super.onResume();
+        
+        // Request focus on keyword input field after activity is fully resumed
+        // This avoids IME initialization conflicts that occur in onCreate()
+        keywordEditText.postDelayed(() -> {
+            if (keywordEditText.isAttachedToWindow() && !keywordEditText.hasFocus()) {
+                keywordEditText.requestFocus();
+            }
+        }, 300); // Delay to ensure activity and IME are fully ready
         // Note: Removed notifyDataSetChanged() call for performance
         // The adapter is already updated via ActivityResultLauncher callback
         // Calling notifyDataSetChanged() here causes unnecessary full redraws
