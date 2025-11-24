@@ -59,6 +59,7 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     private AutoCompleteTextView locationSpinner;
     private com.google.android.material.textfield.TextInputLayout locationInputLayout;
     private TextInputEditText distanceEditText;
+    private com.google.android.material.textfield.TextInputLayout distanceInputLayout;
     private TabLayout categoryTabLayout;
     private MaterialButton searchButton;
     private MaterialButton backButton;
@@ -122,6 +123,7 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
         locationSpinner = findViewById(R.id.locationSpinner);
         locationInputLayout = findViewById(R.id.locationInputLayout);
         distanceEditText = findViewById(R.id.distanceEditText);
+        distanceInputLayout = findViewById(R.id.distanceInputLayout);
         categoryTabLayout = findViewById(R.id.categoryTabLayout);
         searchButton = findViewById(R.id.searchButton);
         backButton = findViewById(R.id.backButton);
@@ -424,35 +426,22 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
         backButton.setOnClickListener(v -> onBackPressed());
         searchButton.setOnClickListener(v -> performSearch());
         
-        // Add distance validation and arrow key handling
+        // Clear distance error when user types
         distanceEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (s.length() == 0) {
-                    // When field is empty, reset to 1
-                    distanceEditText.setText("1");
-                    distanceEditText.setSelection(1);
-                } else {
-                    try {
-                        int distance = Integer.parseInt(s.toString());
-                        if (distance < 1) {
-                            distanceEditText.setText("1");
-                            distanceEditText.setSelection(1);
-                        } else if (distance > 100) {
-                            distanceEditText.setText("100");
-                            distanceEditText.setSelection(3);
-                        }
-                    } catch (NumberFormatException e) {
-                        // Invalid number, will be handled in performSearch
-                    }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Clear error when user starts typing
+                if (distanceInputLayout.isErrorEnabled()) {
+                    distanceInputLayout.setErrorEnabled(false);
+                    distanceInputLayout.setError(null);
                 }
             }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
         
         // Add arrow key handling for distance input (left = decrease, right = increase)
@@ -464,7 +453,7 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                     
                     try {
                         if (currentText.isEmpty()) {
-                            currentValue = 1; // Default value when empty
+                            currentValue = 10; // Default value when empty
                         } else {
                             currentValue = Integer.parseInt(currentText);
                         }
@@ -681,25 +670,36 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             }
         }
 
-        // Return early if there are validation errors
-        if (hasErrors) {
-            return;
-        }
-
         // Validate distance
         if (distance.isEmpty()) {
-            distance = "1";
+            // Show error when field is empty
+            distanceInputLayout.setErrorEnabled(true);
+            distanceInputLayout.setError(getString(R.string.distance_validation_error));
+            hasErrors = true;
         } else {
             try {
                 int distanceValue = Integer.parseInt(distance);
                 if (distanceValue < 1 || distanceValue > 100) {
-                    Toast.makeText(this, "Distance must be between 1 and 100", Toast.LENGTH_SHORT).show();
-                    return;
+                    distanceInputLayout.setErrorEnabled(true);
+                    distanceInputLayout.setError(getString(R.string.distance_validation_error));
+                    hasErrors = true;
+                } else {
+                    // Clear distance error if valid
+                    if (distanceInputLayout.isErrorEnabled()) {
+                        distanceInputLayout.setErrorEnabled(false);
+                        distanceInputLayout.setError(null);
+                    }
                 }
             } catch (NumberFormatException e) {
-                Toast.makeText(this, "Please enter a valid distance", Toast.LENGTH_SHORT).show();
-                return;
+                distanceInputLayout.setErrorEnabled(true);
+                distanceInputLayout.setError(getString(R.string.distance_validation_error));
+                hasErrors = true;
             }
+        }
+
+        // Return early if there are validation errors
+        if (hasErrors) {
+            return;
         }
 
         // Get geohash

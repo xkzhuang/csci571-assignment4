@@ -77,6 +77,7 @@
     <string name="no_results">No events found</string>
     <string name="location_permission_required">Location permission is required</string>
     <string name="location_unavailable">Unable to get location</string>
+    <string name="distance_validation_error">1-100 only</string>
     
     <!-- Menu -->
     <string name="menu_search">Search</string>
