@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myapplication.adapters.EventsAdapter;
+import com.example.myapplication.adapters.KeywordAdapter;
 import com.example.myapplication.adapters.LocationAdapter;
 import com.example.myapplication.api.ApiClient;
 import com.example.myapplication.api.ApiService;
@@ -73,6 +74,9 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     private EventsAdapter eventsAdapter;
     private Handler autocompleteHandler = new Handler(Looper.getMainLooper());
     private Runnable autocompleteRunnable;
+    private KeywordAdapter keywordAdapter;
+    private long keywordSearchingStartTime = 0;
+    private List<String> pendingKeywordResults = null;
     private Handler locationSearchHandler = new Handler(Looper.getMainLooper());
     private Runnable locationSearchRunnable;
     private retrofit2.Call<GooglePlacesV1AutocompleteResponse> currentPlacesCall;
@@ -414,6 +418,12 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     }
 
     private void setupKeywordAutocomplete() {
+        // Initialize custom adapter
+        List<String> emptyList = new ArrayList<>();
+        keywordAdapter = new KeywordAdapter(this, emptyList);
+        keywordEditText.setAdapter(keywordAdapter);
+        keywordEditText.setThreshold(0);
+        
         keywordEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -426,6 +436,8 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                     return;
                 }
                 
+                String text = s.toString();
+                
                 // Clear error when user starts typing
                 if (keywordInputLayout.isErrorEnabled()) {
                     keywordInputLayout.setErrorEnabled(false);
@@ -436,16 +448,57 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                 if (autocompleteRunnable != null) {
                     autocompleteHandler.removeCallbacks(autocompleteRunnable);
                 }
+                
+                // Update user input in adapter (post to avoid blocking input connection)
+                final String finalText = text;
+                keywordEditText.post(() -> {
+                    keywordAdapter.setUserInput(finalText);
+                });
 
-                // Schedule new autocomplete request
-                if (s.length() > 0) {
-                    autocompleteRunnable = () -> fetchAutocompleteSuggestions(s.toString());
+                // Schedule new autocomplete request after 500ms delay
+                if (text.length() > 0) {
+                    autocompleteRunnable = () -> {
+                        // Show "Searching..." indicator and record start time
+                        keywordSearchingStartTime = System.currentTimeMillis();
+                        pendingKeywordResults = null;
+                        
+                        runOnUiThread(() -> {
+                            keywordAdapter.setShowSearching(true);
+                            keywordAdapter.updateSuggestions(new ArrayList<>());
+                            // Don't call setAdapter() - it causes dropdown to refresh
+                            // The adapter will update via notifyDataSetChanged() in updateSuggestions()
+                        });
+                        
+                        // Start API call
+                        fetchAutocompleteSuggestions(text);
+                        
+                        // Schedule to hide "Searching..." and show results after 1.5 seconds
+                        autocompleteHandler.postDelayed(() -> {
+                            showKeywordResultsAndHideSearching();
+                        }, MIN_SEARCHING_DISPLAY_MS);
+                    };
+                    // 500ms delay after user stops typing
                     autocompleteHandler.postDelayed(autocompleteRunnable, AUTOCOMPLETE_DELAY_MS);
+                } else {
+                    // Clear searching and results if text is empty
+                    keywordAdapter.setShowSearching(false);
+                    keywordAdapter.updateSuggestions(new ArrayList<>());
+                    keywordSearchingStartTime = 0;
                 }
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+                // Keep dropdown open after text changes (prevents flickering)
+                // Only reopen if it closed and field has focus
+                if (keywordEditText.hasFocus() && !isItemSelected) {
+                    keywordEditText.post(() -> {
+                        if (!keywordEditText.isPopupShowing()) {
+                            keywordEditText.showDropDown();
+                        }
+                    });
+                }
+            }
         });
         
         // Auto-close dropdown when item is selected
@@ -459,11 +512,16 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                 autocompleteRunnable = null;
             }
             
-            // Dismiss dropdown after item selection
-            keywordEditText.dismissDropDown();
+            // Clear searching indicator
+            keywordAdapter.setShowSearching(false);
+            keywordSearchingStartTime = 0;
+            pendingKeywordResults = null;
             
-            // Clear focus to prevent dropdown from reopening
-            keywordEditText.clearFocus();
+            // Dismiss dropdown after item selection
+            keywordEditText.post(() -> {
+                keywordEditText.dismissDropDown();
+                keywordEditText.clearFocus();
+            });
         });
     }
 
@@ -486,35 +544,73 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                             List<Event> events = response.body().getEvents();
                             if (events != null && !events.isEmpty()) {
                                 List<String> suggestions = new ArrayList<>();
-                                // Add user input as the first option
-                                suggestions.add(keyword);
                                 
+                                // Add suggestions (user input is already first via adapter)
                                 for (Event event : events) {
                                     if (event.getName() != null && !event.getName().equals(keyword)) {
                                         suggestions.add(event.getName());
                                     }
                                 }
                                 
-                                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                                        SearchActivity.this,
-                                        android.R.layout.simple_dropdown_item_1line,
-                                        suggestions
-                                );
-                                keywordEditText.setAdapter(adapter);
-                                
-                                // Only show dropdown if the field has focus and item wasn't just selected
-                                if (keywordEditText.hasFocus() && !isItemSelected) {
-                                    keywordEditText.showDropDown();
-                                }
+                                // Store results - they will be shown after 1.5 seconds
+                                runOnUiThread(() -> {
+                                    pendingKeywordResults = suggestions;
+                                });
+                            } else {
+                                runOnUiThread(() -> {
+                                    pendingKeywordResults = new ArrayList<>();
+                                });
                             }
+                        } else {
+                            runOnUiThread(() -> {
+                                pendingKeywordResults = new ArrayList<>();
+                            });
                         }
                     }
 
                     @Override
                     public void onFailure(Call<SuggestResponse> call, Throwable t) {
                         Log.e(TAG, "Autocomplete failed: " + t.getMessage());
+                        runOnUiThread(() -> {
+                            pendingKeywordResults = new ArrayList<>();
+                        });
                     }
                 });
+    }
+    
+    /**
+     * Show keyword results in dropdown and hide "Searching..." indicator
+     * Called after 1.5 seconds from when "Searching..." was shown
+     */
+    private void showKeywordResultsAndHideSearching() {
+        keywordAdapter.setShowSearching(false);
+        keywordSearchingStartTime = 0;
+        
+        // Populate results if available
+        if (pendingKeywordResults != null) {
+            keywordAdapter.updateSuggestions(pendingKeywordResults);
+            // Don't call setAdapter() - it causes dropdown to refresh
+            // The adapter will update via notifyDataSetChanged() in updateSuggestions()
+            pendingKeywordResults = null;
+            
+            // Show dropdown with results only if it's not already showing (prevents flickering)
+            keywordEditText.post(() -> {
+                if (keywordEditText.hasFocus() && !keywordEditText.isPopupShowing()) {
+                    keywordEditText.showDropDown();
+                }
+            });
+        } else {
+            // No results yet or empty results
+            keywordAdapter.updateSuggestions(new ArrayList<>());
+            // Don't call setAdapter() - it causes dropdown to refresh
+            
+            // If still has focus, keep dropdown open
+            if (keywordEditText.hasFocus() && !keywordEditText.isPopupShowing()) {
+                keywordEditText.post(() -> {
+                    keywordEditText.showDropDown();
+                });
+            }
+        }
     }
 
     private void setupCategoryTabs() {

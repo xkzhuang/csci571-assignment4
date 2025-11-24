@@ -17,19 +17,19 @@ import com.google.android.material.progressindicator.CircularProgressIndicator;
 import java.util.List;
 
 /**
- * Custom adapter for location dropdown with support for:
- * - "Current Location" item with icon at the top
+ * Custom adapter for keyword dropdown with support for:
+ * - User input as first option
  * - "Searching..." item with loading indicator
- * - Google Places search results
+ * - Autocomplete suggestions
  */
-public class LocationAdapter extends ArrayAdapter<String> {
+public class KeywordAdapter extends ArrayAdapter<String> {
     
     private final Context context;
     private final List<String> items;
-    private boolean showCurrentLocation = true;
+    private String userInput = "";
     private boolean showSearching = false;
     
-    public LocationAdapter(@NonNull Context context, @NonNull List<String> items) {
+    public KeywordAdapter(@NonNull Context context, @NonNull List<String> items) {
         super(context, R.layout.item_location_dropdown, items);
         this.context = context;
         this.items = items;
@@ -38,17 +38,17 @@ public class LocationAdapter extends ArrayAdapter<String> {
     @Override
     public int getCount() {
         int count = items.size();
-        if (showCurrentLocation) count++;
-        if (showSearching) count++;
+        if (!userInput.isEmpty()) count++; // User input as first option
+        if (showSearching) count++; // "Searching..." option
         return count;
     }
     
     @Override
     public String getItem(int position) {
-        if (showCurrentLocation && position == 0) {
-            return "Current Location";
+        if (!userInput.isEmpty() && position == 0) {
+            return userInput;
         }
-        int offset = showCurrentLocation ? 1 : 0;
+        int offset = userInput.isEmpty() ? 0 : 1;
         if (showSearching && position == offset) {
             return "Searching...";
         }
@@ -71,29 +71,24 @@ public class LocationAdapter extends ArrayAdapter<String> {
         TextView text = convertView.findViewById(R.id.locationText);
         CircularProgressIndicator loadingIndicator = convertView.findViewById(R.id.loadingIndicator);
         
-        String item = getItem(position);
-        
         // Hide loading indicator and icon by default
         loadingIndicator.setVisibility(View.GONE);
         icon.setVisibility(View.GONE);
+        
+        String item = getItem(position);
         
         if (item == null) {
             text.setText("");
             return convertView;
         }
         
-        if ("Current Location".equals(item)) {
-            // Show location pin icon for Current Location
-            icon.setImageResource(R.drawable.ic_location);
-            icon.setVisibility(View.VISIBLE);
-            text.setText("Current Location");
-        } else if ("Searching...".equals(item)) {
+        if ("Searching...".equals(item)) {
             // Show loading indicator for Searching state
             icon.setVisibility(View.GONE);
             loadingIndicator.setVisibility(View.VISIBLE);
             text.setText("Searching...");
         } else {
-            // Hide icon for search results (only Current Location should have icon)
+            // Hide icon for keyword items (user input or suggestions)
             icon.setVisibility(View.GONE);
             text.setText(item);
         }
@@ -101,9 +96,12 @@ public class LocationAdapter extends ArrayAdapter<String> {
         return convertView;
     }
     
-    public void setShowCurrentLocation(boolean show) {
-        if (showCurrentLocation != show) {
-            showCurrentLocation = show;
+    public void setUserInput(String input) {
+        String newInput = input != null ? input : "";
+        // Only update if input actually changed to avoid unnecessary notifyDataSetChanged() calls
+        if (userInput == null ? newInput != null : !userInput.equals(newInput)) {
+            userInput = newInput;
+            // Post the update to avoid blocking input connection
             notifyDataSetChanged();
         }
     }
@@ -111,29 +109,27 @@ public class LocationAdapter extends ArrayAdapter<String> {
     public void setShowSearching(boolean show) {
         if (showSearching != show) {
             showSearching = show;
-            // Use notifyDataSetChanged() which should not close dropdown if threshold is 0
             notifyDataSetChanged();
         }
     }
     
-    public void updateSearchResults(List<String> results) {
+    public void updateSuggestions(List<String> suggestions) {
         boolean changed = false;
-        if (results == null) {
+        if (suggestions == null) {
             if (!items.isEmpty()) {
                 items.clear();
                 changed = true;
             }
         } else {
-            // Only update if results actually changed
-            if (items.size() != results.size() || !items.equals(results)) {
+            // Only update if suggestions actually changed
+            if (items.size() != suggestions.size() || !items.equals(suggestions)) {
                 items.clear();
-                items.addAll(results);
+                items.addAll(suggestions);
                 changed = true;
             }
         }
         
         if (changed) {
-            // Use notifyDataSetChanged() which should not close dropdown if threshold is 0
             notifyDataSetChanged();
         }
     }

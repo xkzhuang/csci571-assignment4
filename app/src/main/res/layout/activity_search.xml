@@ -59,7 +59,8 @@
                         android:hint="Search events…"
                         android:inputType="text"
                         android:maxLines="1"
-                        android:completionThreshold="1"
+                        android:completionThreshold="0"
+                        android:dropDownHeight="wrap_content"
                         android:textAppearance="?attr/textAppearanceTitleLarge"
                         android:textColor="?attr/colorPrimary" />
 
