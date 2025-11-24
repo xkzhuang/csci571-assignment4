@@ -5,7 +5,9 @@ import com.google.gson.GsonBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -16,6 +18,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class DirectApiClient {
     private static final String IPINFO_BASE_URL = "https://ipinfo.io/";
     private static final String GOOGLE_GEOCODING_BASE_URL = "https://maps.googleapis.com/maps/api/";
+    private static final String GOOGLE_PLACES_API_BASE_URL = "https://places.googleapis.com/v1/";
     
     private static IpInfoApiService ipInfoApiService = null;
     private static GoogleGeocodingApiService googleGeocodingApiService = null;
@@ -65,7 +68,7 @@ public class DirectApiClient {
         if (googlePlacesApiService == null) {
             synchronized (DirectApiClient.class) {
                 if (googlePlacesApiService == null) {
-                    Retrofit retrofit = createRetrofit(GOOGLE_GEOCODING_BASE_URL);
+                    Retrofit retrofit = createPlacesRetrofit();
                     googlePlacesApiService = retrofit.create(GooglePlacesApiService.class);
                 }
             }
@@ -108,6 +111,49 @@ public class DirectApiClient {
         // Create Retrofit instance
         return new Retrofit.Builder()
                 .baseUrl(baseUrl)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
+    }
+    
+    /**
+     * Create Retrofit instance for Google Places API v1 with custom headers
+     * @return Retrofit instance
+     */
+    private static Retrofit createPlacesRetrofit() {
+        // Create logging interceptor
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(LOG_LEVEL);
+        
+        // Create interceptor to add API key and field mask header
+        Interceptor headerInterceptor = chain -> {
+            Request original = chain.request();
+            Request.Builder requestBuilder = original.newBuilder()
+                    .header("X-Goog-FieldMask", "suggestions.placePrediction.text");
+            
+            Request request = requestBuilder.build();
+            return chain.proceed(request);
+        };
+        
+        // Create optimized OkHttp client with connection pooling and timeouts
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(headerInterceptor)
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(15, TimeUnit.SECONDS) // Connection timeout
+                .readTimeout(30, TimeUnit.SECONDS)   // Read timeout
+                .writeTimeout(30, TimeUnit.SECONDS)   // Write timeout
+                .retryOnConnectionFailure(true)       // Retry on connection failure
+                .build();
+        
+        // Create lenient Gson instance
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .serializeNulls()
+                .create();
+        
+        // Create Retrofit instance
+        return new Retrofit.Builder()
+                .baseUrl(GOOGLE_PLACES_API_BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();

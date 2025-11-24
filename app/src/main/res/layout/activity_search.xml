@@ -122,7 +122,7 @@
                         android:clickable="true"
                         android:completionThreshold="0"
                         android:dropDownAnchor="@id/locationInputLayout"
-                        android:dropDownHeight="75dp"
+                        android:dropDownHeight="wrap_content"
                         android:dropDownVerticalOffset="4dp"
                         android:focusable="true"
                         android:focusableInTouchMode="true"

@@ -1,26 +1,30 @@
 package com.example.myapplication.api;
 
-import com.example.myapplication.api.responses.GooglePlacesAutocompleteResponse;
+import com.example.myapplication.api.requests.GooglePlacesAutocompleteRequest;
+import com.example.myapplication.api.responses.GooglePlacesV1AutocompleteResponse;
 
 import retrofit2.Call;
-import retrofit2.http.GET;
-import retrofit2.http.Query;
+import retrofit2.http.Body;
+import retrofit2.http.Header;
+import retrofit2.http.POST;
+import retrofit2.http.Url;
 
 /**
- * API Service for Google Places Autocomplete API
+ * API Service for Google Places API v1 Autocomplete
  */
 public interface GooglePlacesApiService {
     
     /**
-     * Get place autocomplete predictions using Google Places API
-     * @param input The text string on which to search
-     * @param key Google API key
-     * @return GooglePlacesAutocompleteResponse with predictions
+     * Get place autocomplete predictions using Google Places API v1
+     * @param apiKey Google API key (sent as header)
+     * @param request Request body with input and includedPrimaryTypes
+     * @return GooglePlacesV1AutocompleteResponse with suggestions
      */
-    @GET("place/autocomplete/json")
-    Call<GooglePlacesAutocompleteResponse> getPlacePredictions(
-            @Query("input") String input,
-            @Query("key") String key
+    @POST
+    Call<GooglePlacesV1AutocompleteResponse> getPlacePredictions(
+            @Url String url,
+            @Header("X-Goog-Api-Key") String apiKey,
+            @Body GooglePlacesAutocompleteRequest request
     );
 }
 

@@ -73,12 +73,14 @@ public class LocationAdapter extends ArrayAdapter<String> {
         
         String item = getItem(position);
         
-        if (item == null) {
-            return convertView;
-        }
-        
         // Hide loading indicator by default
         loadingIndicator.setVisibility(View.GONE);
+        icon.setVisibility(View.VISIBLE);
+        
+        if (item == null) {
+            text.setText("");
+            return convertView;
+        }
         
         if ("Current Location".equals(item)) {
             // Show location pin icon for Current Location

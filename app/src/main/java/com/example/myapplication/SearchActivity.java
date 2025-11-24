@@ -26,11 +26,12 @@ import com.example.myapplication.api.ApiClient;
 import com.example.myapplication.api.ApiService;
 import com.example.myapplication.api.DirectApiClient;
 import com.example.myapplication.api.GooglePlacesApiService;
+import com.example.myapplication.api.requests.GooglePlacesAutocompleteRequest;
 import com.example.myapplication.api.responses.GeocodeResponse;
 import com.example.myapplication.api.responses.IpInfoResponse;
 import com.example.myapplication.api.responses.IpInfoDirectResponse;
 import com.example.myapplication.api.responses.GoogleGeocodingResponse;
-import com.example.myapplication.api.responses.GooglePlacesAutocompleteResponse;
+import com.example.myapplication.api.responses.GooglePlacesV1AutocompleteResponse;
 import com.example.myapplication.api.responses.SuggestResponse;
 import com.example.myapplication.models.Event;
 import com.example.myapplication.utils.CategoryMapper;
@@ -50,7 +51,8 @@ import retrofit2.Response;
 public class SearchActivity extends AppCompatActivity implements EventsAdapter.OnEventClickListener {
 
     private static final String TAG = "SearchActivity";
-    private static final long AUTOCOMPLETE_DELAY_MS = 300; // Delay for autocomplete API calls
+    private static final long AUTOCOMPLETE_DELAY_MS = 500; // Delay for autocomplete API calls (500ms)
+    private static final long MIN_SEARCHING_DISPLAY_MS = 1500; // Minimum time to show "Searching..." (1.5 seconds)
     private static final String GOOGLE_API_KEY = "AIzaSyA5JegXZBFDWtqszH3Ny319CZXVISihU1Y";
 
     // UI Components
@@ -73,13 +75,17 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     private Runnable autocompleteRunnable;
     private Handler locationSearchHandler = new Handler(Looper.getMainLooper());
     private Runnable locationSearchRunnable;
+    private retrofit2.Call<GooglePlacesV1AutocompleteResponse> currentPlacesCall;
     private LocationAdapter locationAdapter;
+    private List<String> pendingResults = null; // Store results until animation completes
     private String currentGeohash = "";
     private boolean isCustomLocation = false;
     private String selectedCategory = "All";
     private List<Event> allEvents = new ArrayList<>(); // Store all search results for client-side filtering
     private ActivityResultLauncher<Intent> eventDetailsLauncher;
     private boolean isItemSelected = false; // Flag to prevent dropdown from reopening after item selection
+    private boolean isLocationItemSelected = false; // Flag to prevent API calls when location is selected
+    private long searchingStartTime = 0; // Track when "Searching..." was shown
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,20 +163,49 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
 
         // Handle item selection from dropdown
         locationSpinner.setOnItemClickListener((parent, view, position, id) -> {
+            // Set flag to prevent API call from text change listener
+            isLocationItemSelected = true;
+            
+            // Cancel any pending API calls
+            if (locationSearchRunnable != null) {
+                locationSearchHandler.removeCallbacks(locationSearchRunnable);
+                locationSearchRunnable = null;
+            }
+            
+            // Cancel any in-flight API calls
+            if (currentPlacesCall != null && !currentPlacesCall.isCanceled()) {
+                currentPlacesCall.cancel();
+                currentPlacesCall = null;
+            }
+            
+            // Clear pending results
+            pendingResults = null;
+            
+            // Hide "Searching..." indicator immediately
+            locationAdapter.setShowSearching(false);
+            searchingStartTime = 0;
+            
             String selected = locationAdapter.getItem(position);
             if ("Current Location".equals(selected)) {
                 // Only switch back to current location mode when explicitly selected
                 isCustomLocation = false;
                 locationSpinner.setText("Current Location", false);
                 detectCurrentLocation();
-                // Clear focus to hide dropdown
-                locationSpinner.clearFocus();
             } else if (selected != null && !"Searching...".equals(selected)) {
                 // User selected a search result
                 locationSpinner.setText(selected, false);
                 isCustomLocation = true;
-                locationSpinner.clearFocus();
             }
+            
+            // Close dropdown completely
+            locationSpinner.post(() -> {
+                locationSpinner.dismissDropDown();
+                locationSpinner.clearFocus();
+                // Reset flag after a short delay to allow text change to complete
+                locationSearchHandler.postDelayed(() -> {
+                    isLocationItemSelected = false;
+                }, 100);
+            });
         });
 
         // Handle text changes to trigger Google Places search
@@ -180,6 +215,11 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Don't trigger API call if item was just selected
+                if (isLocationItemSelected) {
+                    return;
+                }
+                
                 String text = s.toString().trim();
                 
                 // Clear error when user starts typing
@@ -207,16 +247,36 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                 if (text.isEmpty() || "Current Location".equals(text)) {
                     locationAdapter.setShowSearching(false);
                     locationAdapter.updateSearchResults(new ArrayList<>());
+                    searchingStartTime = 0;
                     return;
                 }
                 
-                // Show "Searching..." indicator
-                locationAdapter.setShowSearching(true);
-                locationAdapter.updateSearchResults(new ArrayList<>());
-                locationSpinner.showDropDown();
-                
                 // Schedule new search request after user stops typing
-                locationSearchRunnable = () -> searchGooglePlaces(text);
+                locationSearchRunnable = () -> {
+                    // Show "Searching..." indicator and record start time
+                    searchingStartTime = System.currentTimeMillis();
+                    pendingResults = null; // Clear any previous results
+                    
+                    runOnUiThread(() -> {
+                        locationAdapter.setShowSearching(true);
+                        locationAdapter.updateSearchResults(new ArrayList<>());
+                        // Force adapter refresh
+                        locationSpinner.setAdapter(locationAdapter);
+                        
+                        // Always show dropdown when showing Searching
+                        locationSpinner.post(() -> {
+                            locationSpinner.showDropDown();
+                        });
+                    });
+                    
+                    // Start API call
+                    searchGooglePlaces(text);
+                    
+                    // Schedule to hide "Searching..." and show results after 1.5 seconds
+                    locationSearchHandler.postDelayed(() -> {
+                        showResultsAndHideSearching();
+                    }, MIN_SEARCHING_DISPLAY_MS);
+                };
                 locationSearchHandler.postDelayed(locationSearchRunnable, AUTOCOMPLETE_DELAY_MS);
             }
 
@@ -232,54 +292,122 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
     
     private void searchGooglePlaces(String input) {
         if (input == null || input.trim().isEmpty()) {
-            locationAdapter.setShowSearching(false);
-            locationAdapter.updateSearchResults(new ArrayList<>());
+            pendingResults = new ArrayList<>();
             return;
         }
         
-        DirectApiClient.getGooglePlacesService().getPlacePredictions(input.trim(), GOOGLE_API_KEY)
-                .enqueue(new Callback<GooglePlacesAutocompleteResponse>() {
+        final String trimmedInput = input.trim();
+        
+        // Create request with input and includedPrimaryTypes
+        GooglePlacesAutocompleteRequest request = new GooglePlacesAutocompleteRequest(trimmedInput);
+        String fullUrl = "https://places.googleapis.com/v1/places:autocomplete";
+        
+        // Cancel any previous in-flight call
+        if (currentPlacesCall != null && !currentPlacesCall.isCanceled()) {
+            currentPlacesCall.cancel();
+        }
+        
+        currentPlacesCall = DirectApiClient.getGooglePlacesService().getPlacePredictions(fullUrl, GOOGLE_API_KEY, request);
+        currentPlacesCall.enqueue(new Callback<GooglePlacesV1AutocompleteResponse>() {
                     @Override
-                    public void onResponse(Call<GooglePlacesAutocompleteResponse> call, 
-                                         Response<GooglePlacesAutocompleteResponse> response) {
-                        locationAdapter.setShowSearching(false);
+                    public void onResponse(Call<GooglePlacesV1AutocompleteResponse> call, 
+                                         Response<GooglePlacesV1AutocompleteResponse> response) {
+                        // Clear the call reference
+                        if (currentPlacesCall == call) {
+                            currentPlacesCall = null;
+                        }
                         
                         if (response.isSuccessful() && response.body() != null) {
-                            GooglePlacesAutocompleteResponse placesResponse = response.body();
-                            if (placesResponse.isSuccessful() && placesResponse.getPredictions() != null) {
+                            GooglePlacesV1AutocompleteResponse placesResponse = response.body();
+                            
+                            if (placesResponse.getSuggestions() != null && !placesResponse.getSuggestions().isEmpty()) {
                                 List<String> results = new ArrayList<>();
-                                for (GooglePlacesAutocompleteResponse.Prediction prediction : 
-                                     placesResponse.getPredictions()) {
-                                    if (prediction.getDescription() != null) {
-                                        results.add(prediction.getDescription());
+                                for (GooglePlacesV1AutocompleteResponse.Suggestion suggestion : placesResponse.getSuggestions()) {
+                                    if (suggestion.getPlacePrediction() != null &&
+                                        suggestion.getPlacePrediction().getText() != null &&
+                                        suggestion.getPlacePrediction().getText().getText() != null) {
+                                        String placeText = suggestion.getPlacePrediction().getText().getText();
+                                        if (placeText != null && !placeText.isEmpty()) {
+                                            results.add(placeText);
+                                        }
                                     }
                                 }
-                                locationAdapter.updateSearchResults(results);
                                 
-                                // Show dropdown with results
-                                if (locationSpinner.hasFocus()) {
-                                    locationSpinner.showDropDown();
-                                }
+                                // Store results - they will be shown after 1.5 seconds
+                                runOnUiThread(() -> {
+                                    pendingResults = results;
+                                });
                             } else {
-                                // No results
-                                locationAdapter.updateSearchResults(new ArrayList<>());
-                                if (locationSpinner.hasFocus()) {
-                                    locationSpinner.showDropDown();
-                                }
+                                runOnUiThread(() -> {
+                                    pendingResults = new ArrayList<>();
+                                });
                             }
                         } else {
-                            Log.e(TAG, "Places API request failed: " + response.code());
-                            locationAdapter.updateSearchResults(new ArrayList<>());
+                            if (response != null && response.errorBody() != null) {
+                                try {
+                                    response.errorBody().string();
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Failed to read error body: " + e.getMessage());
+                                }
+                            }
+                            Log.e(TAG, "Places API request failed. Code: " + (response != null ? response.code() : "null response"));
+                            runOnUiThread(() -> {
+                                pendingResults = new ArrayList<>();
+                            });
                         }
                     }
 
                     @Override
-                    public void onFailure(Call<GooglePlacesAutocompleteResponse> call, Throwable t) {
-                        locationAdapter.setShowSearching(false);
-                        Log.e(TAG, "Places API request failed: " + t.getMessage());
-                        locationAdapter.updateSearchResults(new ArrayList<>());
+                    public void onFailure(Call<GooglePlacesV1AutocompleteResponse> call, Throwable t) {
+                        // Clear the call reference
+                        if (currentPlacesCall == call) {
+                            currentPlacesCall = null;
+                        }
+                        
+                        // Only log error if not canceled
+                        if (t != null && !call.isCanceled()) {
+                            Log.e(TAG, "Places API request failed: " + t.getMessage());
+                        }
+                        
+                        runOnUiThread(() -> {
+                            pendingResults = new ArrayList<>();
+                        });
                     }
                 });
+    }
+    
+    /**
+     * Show results in dropdown and hide "Searching..." indicator
+     * Called after 1.5 seconds from when "Searching..." was shown
+     */
+    private void showResultsAndHideSearching() {
+        locationAdapter.setShowSearching(false);
+        searchingStartTime = 0;
+        
+        // Populate results if available
+        if (pendingResults != null) {
+            locationAdapter.updateSearchResults(pendingResults);
+            locationSpinner.setAdapter(locationAdapter);
+            pendingResults = null;
+            
+            // Show dropdown with results
+            locationSpinner.post(() -> {
+                if (locationSpinner.hasFocus()) {
+                    locationSpinner.showDropDown();
+                }
+            });
+        } else {
+            // No results yet or empty results
+            locationAdapter.updateSearchResults(new ArrayList<>());
+            locationSpinner.setAdapter(locationAdapter);
+            
+            // If still has focus, keep dropdown open with just "Current Location"
+            if (locationSpinner.hasFocus()) {
+                locationSpinner.post(() -> {
+                    locationSpinner.showDropDown();
+                });
+            }
+        }
     }
 
     private void setupKeywordAutocomplete() {
