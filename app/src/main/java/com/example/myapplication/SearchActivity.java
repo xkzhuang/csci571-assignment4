@@ -145,6 +145,9 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
         locationAdapter.setShowCurrentLocation(true);
         locationSpinner.setAdapter(locationAdapter);
         locationSpinner.setText("Current Location", false);
+        
+        // Prevent dropdown from closing on text changes
+        locationSpinner.setThreshold(0);
 
         // Handle focus changes
         locationSpinner.setOnFocusChangeListener((v, hasFocus) -> {
@@ -238,11 +241,6 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                     locationSearchHandler.removeCallbacks(locationSearchRunnable);
                 }
                 
-                // Show dropdown immediately when typing
-                if (locationSpinner.hasFocus()) {
-                    locationSpinner.showDropDown();
-                }
-                
                 // If text is empty or "Current Location", just show Current Location option
                 if (text.isEmpty() || "Current Location".equals(text)) {
                     locationAdapter.setShowSearching(false);
@@ -260,13 +258,8 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                     runOnUiThread(() -> {
                         locationAdapter.setShowSearching(true);
                         locationAdapter.updateSearchResults(new ArrayList<>());
-                        // Force adapter refresh
-                        locationSpinner.setAdapter(locationAdapter);
-                        
-                        // Always show dropdown when showing Searching
-                        locationSpinner.post(() -> {
-                            locationSpinner.showDropDown();
-                        });
+                        // Don't call setAdapter() - it causes dropdown to refresh
+                        // The adapter will update via notifyDataSetChanged() in updateSearchResults()
                     });
                     
                     // Start API call
@@ -281,7 +274,16 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+                // Keep dropdown open after text changes (prevents flickering)
+                if (locationSpinner.hasFocus() && !isLocationItemSelected) {
+                    locationSpinner.post(() -> {
+                        if (!locationSpinner.isPopupShowing()) {
+                            locationSpinner.showDropDown();
+                        }
+                    });
+                }
+            }
         });
         
         // Make dropdown show on click
@@ -387,22 +389,23 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
         // Populate results if available
         if (pendingResults != null) {
             locationAdapter.updateSearchResults(pendingResults);
-            locationSpinner.setAdapter(locationAdapter);
+            // Don't call setAdapter() - it causes dropdown to refresh
+            // The adapter will update via notifyDataSetChanged() in updateSearchResults()
             pendingResults = null;
             
-            // Show dropdown with results
+            // Show dropdown with results only if it's not already showing
             locationSpinner.post(() -> {
-                if (locationSpinner.hasFocus()) {
+                if (locationSpinner.hasFocus() && !locationSpinner.isPopupShowing()) {
                     locationSpinner.showDropDown();
                 }
             });
         } else {
             // No results yet or empty results
             locationAdapter.updateSearchResults(new ArrayList<>());
-            locationSpinner.setAdapter(locationAdapter);
+            // Don't call setAdapter() - it causes dropdown to refresh
             
             // If still has focus, keep dropdown open with just "Current Location"
-            if (locationSpinner.hasFocus()) {
+            if (locationSpinner.hasFocus() && !locationSpinner.isPopupShowing()) {
                 locationSpinner.post(() -> {
                     locationSpinner.showDropDown();
                 });

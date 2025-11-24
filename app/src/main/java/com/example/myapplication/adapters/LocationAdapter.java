@@ -112,16 +112,31 @@ public class LocationAdapter extends ArrayAdapter<String> {
     public void setShowSearching(boolean show) {
         if (showSearching != show) {
             showSearching = show;
+            // Use notifyDataSetChanged() which should not close dropdown if threshold is 0
             notifyDataSetChanged();
         }
     }
     
     public void updateSearchResults(List<String> results) {
-        items.clear();
-        if (results != null) {
-            items.addAll(results);
+        boolean changed = false;
+        if (results == null) {
+            if (!items.isEmpty()) {
+                items.clear();
+                changed = true;
+            }
+        } else {
+            // Only update if results actually changed
+            if (items.size() != results.size() || !items.equals(results)) {
+                items.clear();
+                items.addAll(results);
+                changed = true;
+            }
         }
-        notifyDataSetChanged();
+        
+        if (changed) {
+            // Use notifyDataSetChanged() which should not close dropdown if threshold is 0
+            notifyDataSetChanged();
+        }
     }
 }
 
