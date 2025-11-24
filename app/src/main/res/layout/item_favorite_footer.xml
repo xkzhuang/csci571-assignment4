@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ticketMasterTextView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:text="@string/powered_by_ticketmaster"
+    android:textAppearance="?attr/textAppearanceBodyLarge"
+    android:textColor="?attr/colorOnSurfaceVariant"
+    android:textStyle="italic"
+    android:gravity="center"
+    android:padding="24dp"
+    android:layout_marginTop="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground" />
+

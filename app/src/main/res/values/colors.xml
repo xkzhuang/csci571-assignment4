@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 - Light Theme Colors -->
+    <!-- Primary Color Palette -->
+    <color name="md_theme_light_primary">#1976D2</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#BBDEFB</color>
+    <color name="md_theme_light_onPrimaryContainer">#001D36</color>
+    
+    <!-- Secondary Color Palette -->
+    <color name="md_theme_light_secondary">#535E70</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#D7E3F7</color>
+    <color name="md_theme_light_onSecondaryContainer">#101C2B</color>
+    
+    <!-- Tertiary Color Palette -->
+    <color name="md_theme_light_tertiary">#FF4081</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFD9E2</color>
+    <color name="md_theme_light_onTertiaryContainer">#3E001D</color>
+    
+    <!-- Error Color Palette -->
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+    
+    <!-- Background and Surface -->
+    <color name="md_theme_light_background">#FDFCFF</color>
+    <color name="md_theme_light_onBackground">#1A1C1E</color>
+    <color name="md_theme_light_surface">#FDFCFF</color>
+    <color name="md_theme_light_onSurface">#1A1C1E</color>
+    <color name="md_theme_light_surfaceVariant">#DFE2EB</color>
+    <color name="md_theme_light_onSurfaceVariant">#43474E</color>
+    
+    <!-- Outline -->
+    <color name="md_theme_light_outline">#73777F</color>
+    <color name="md_theme_light_outlineVariant">#C3C6CF</color>
+    
+    <!-- Surface Container Levels (Tonal Elevation) -->
+    <color name="md_theme_light_surfaceContainerLowest">#FFFFFF</color>
+    <color name="md_theme_light_surfaceContainerLow">#F7F9FF</color>
+    <color name="md_theme_light_surfaceContainer">#F1F3FA</color>
+    <color name="md_theme_light_surfaceContainerHigh">#ECEFF5</color>
+    <color name="md_theme_light_surfaceContainerHighest">#E6E8EF</color>
+    
+    <!-- Material Design 3 - Dark Theme Colors -->
+    <!-- Primary Color Palette -->
+    <color name="md_theme_dark_primary">#90CAF9</color>
+    <color name="md_theme_dark_onPrimary">#003258</color>
+    <color name="md_theme_dark_primaryContainer">#00497D</color>
+    <color name="md_theme_dark_onPrimaryContainer">#CAE6FF</color>
+    
+    <!-- Secondary Color Palette -->
+    <color name="md_theme_dark_secondary">#BBC7DB</color>
+    <color name="md_theme_dark_onSecondary">#253140</color>
+    <color name="md_theme_dark_secondaryContainer">#3C4758</color>
+    <color name="md_theme_dark_onSecondaryContainer">#D7E3F7</color>
+    
+    <!-- Tertiary Color Palette -->
+    <color name="md_theme_dark_tertiary">#FFB0C9</color>
+    <color name="md_theme_dark_onTertiary">#5F1132</color>
+    <color name="md_theme_dark_tertiaryContainer">#7B2949</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFD9E2</color>
+    
+    <!-- Error Color Palette -->
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    
+    <!-- Background and Surface -->
+    <color name="md_theme_dark_background">#1A1C1E</color>
+    <color name="md_theme_dark_onBackground">#E2E2E6</color>
+    <color name="md_theme_dark_surface">#1A1C1E</color>
+    <color name="md_theme_dark_onSurface">#E2E2E6</color>
+    <color name="md_theme_dark_surfaceVariant">#43474E</color>
+    <color name="md_theme_dark_onSurfaceVariant">#C3C6CF</color>
+    
+    <!-- Outline -->
+    <color name="md_theme_dark_outline">#8D9199</color>
+    <color name="md_theme_dark_outlineVariant">#43474E</color>
+    
+    <!-- Surface Container Levels (Tonal Elevation) -->
+    <color name="md_theme_dark_surfaceContainerLowest">#0F1113</color>
+    <color name="md_theme_dark_surfaceContainerLow">#1A1C1E</color>
+    <color name="md_theme_dark_surfaceContainer">#1E2022</color>
+    <color name="md_theme_dark_surfaceContainerHigh">#282A2C</color>
+    <color name="md_theme_dark_surfaceContainerHighest">#333537</color>
+    
+    <!-- Category colors (kept for custom use) -->
+    <color name="category_music">#E91E63</color>
+    <color name="category_sports">#FF9800</color>
+    <color name="category_arts_theatre">#9C27B0</color>
+    <color name="category_film">#2196F3</color>
+    <color name="category_miscellaneous">#4CAF50</color>
+    
+    <!-- Status colors (kept for custom use) -->
+    <color name="status_on_sale">#4CAF50</color>
+    <color name="status_off_sale">#F44336</color>
+    <color name="status_sold_out">#9E9E9E</color>
+    <color name="status_canceled">#000000</color>
+    <color name="status_postponed">#FF9800</color>
+    
+    <!-- Favorite heart color (kept for custom use) -->
+    <color name="favorite_filled">#F44336</color>
+    <color name="favorite_outline">#757575</color>
+</resources>

@@ -1,0 +1,88 @@
+<resources>
+    <string name="app_name">Event Search</string>
+    
+    <!-- Tab titles -->
+    <string name="tab_search">Search</string>
+    <string name="tab_favorites">Favorites</string>
+    
+    <!-- Search form -->
+    <string name="keywords_label">Keywords</string>
+    <string name="keywords_hint">Search for events…</string>
+    <string name="category_label">Category</string>
+    <string name="location_label">Location</string>
+    <string name="location_hint">Enter city, district or street…</string>
+    <string name="location_icon">Location icon</string>
+    <string name="auto_detect_location">Auto-detect Location</string>
+    <string name="distance_label">Distance</string>
+    <string name="miles">miles</string>
+    <string name="search_events">Search Events</string>
+    
+    <!-- Categories -->
+    <string name="category_all">All</string>
+    <string name="category_music">Music</string>
+    <string name="category_sports">Sports</string>
+    <string name="category_arts_theatre">Arts &amp; Theatre</string>
+    <string name="category_film">Film</string>
+    <string name="category_miscellaneous">Miscellaneous</string>
+    
+    <!-- Favorites -->
+    <string name="favorites_count">You have %d favorite event(s)</string>
+    <string name="no_favorites">No favorites</string>
+    <string name="added_to_favorites">Added to favorites</string>
+    <string name="removed_from_favorites">Removed from favorites</string>
+    
+    <!-- Event Details -->
+    <string name="buy_tickets">Buy Tickets</string>
+    <string name="back_to_search">Back to Search</string>
+    <string name="tab_details">Details</string>
+    <string name="tab_artist">Artist</string>
+    <string name="tab_venue">Venue</string>
+    
+    <!-- Info Tab -->
+    <string name="event_label">Event</string>
+    <string name="date_label">Date</string>
+    <string name="artist_team_label">Artist/Team</string>
+    <string name="venue_label">Venue</string>
+    <string name="genres_label">Genres</string>
+    <string name="price_range_label">Price Range</string>
+    <string name="ticket_status_label">Ticket Status</string>
+    <string name="on_sale">On Sale</string>
+    <string name="off_sale">Off Sale</string>
+    <string name="canceled">Canceled</string>
+    <string name="postponed">Postponed</string>
+    <string name="scheduled">Scheduled</string>
+    <string name="sold_out">Sold Out</string>
+    <string name="share_label">Share</string>
+    <string name="share_event">Share Event</string>
+    <string name="open_ticketing_url">Open Ticketing URL</string>
+    <string name="seatmap_label">Seatmap</string>
+    
+    <!-- Artist Tab -->
+    <string name="followers_label">Followers</string>
+    <string name="popularity_label">Popularity</string>
+    <string name="albums_label">Albums</string>
+    <string name="no_artist_data">No artist data</string>
+    <string name="spotify_error_message">Cannot get Spotify data, try again later.</string>
+    
+    <!-- Venue Tab -->
+    <string name="address_label">Address</string>
+    <string name="phone_label">Phone Number</string>
+    <string name="open_hours_label">Open Hours</string>
+    <string name="general_rule_label">General Rule</string>
+    <string name="child_rule_label">Child Rule</string>
+    
+    <!-- Messages -->
+    <string name="loading">Loading…</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="no_results">No events found</string>
+    <string name="location_permission_required">Location permission is required</string>
+    <string name="location_unavailable">Unable to get location</string>
+    
+    <!-- Menu -->
+    <string name="menu_search">Search</string>
+    <string name="menu_favorites">Favorites</string>
+    
+    <!-- TicketMaster -->
+    <string name="powered_by_ticketmaster">Powered by TicketMaster</string>
+    <string name="ticketmaster_url">https://www.ticketmaster.com</string>
+</resources>

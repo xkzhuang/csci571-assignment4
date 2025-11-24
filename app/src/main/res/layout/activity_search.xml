@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- App Bar with Search Components -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSecondaryContainer"
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="false"
+        app:elevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Top Row: Back Button + Keyword Search + Search Button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="8dp">
+
+                <!-- Back Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/backButton"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:icon="?attr/homeAsUpIndicator"
+                    app:iconTint="?attr/colorPrimary" />
+
+                <!-- Keyword AutoComplete Search Field -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/keywordInputLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    app:hintEnabled="false"
+                    app:errorEnabled="false"
+                    app:errorTextColor="?attr/colorError">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/keywordEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Search events…"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:completionThreshold="1"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:textColor="?attr/colorPrimary" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Search Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/searchButton"
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:icon="@drawable/ic_search"
+                    app:iconTint="?attr/colorPrimary" />
+
+            </LinearLayout>
+
+            <!-- Second Row: Location Selector + Distance Input -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="8dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
+
+                <!-- Location Selector -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/locationInputLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:maxWidth="200dp"
+                    android:minHeight="72dp"
+                    android:hint="Enter location..."
+                    android:paddingStart="40dp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    app:startIconDrawable="@drawable/ic_location"
+                    app:startIconTint="?attr/colorPrimary"
+                    app:hintEnabled="false"
+                    app:expandedHintEnabled="false"
+                    app:endIconMode="dropdown_menu"
+                    app:errorEnabled="true"
+                    app:errorTextColor="?attr/colorError">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/locationSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical"
+                        android:layout_marginStart="-40dp"
+                        android:clickable="true"
+                        android:completionThreshold="0"
+                        android:dropDownAnchor="@id/locationInputLayout"
+                        android:dropDownHeight="75dp"
+                        android:dropDownVerticalOffset="4dp"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:hint="Enter location..."
+                        android:inputType="text"
+                        android:text="Current Location"
+                        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Distance Selector -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/distanceInputLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="120dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="72dp"
+                    android:hint=""
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    app:startIconDrawable="@drawable/ic_distance"
+                    app:startIconTint="?attr/colorPrimary"
+                    app:hintEnabled="false"
+                    app:expandedHintEnabled="false"
+                    app:errorEnabled="true"
+                    app:errorTextColor="?attr/colorError"
+                    app:suffixText="mi"
+                    app:suffixTextAppearance="?attr/textAppearanceBodyLarge"
+                    app:suffixTextColor="?attr/colorOnSecondaryContainer">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/distanceEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:gravity="center_vertical|center_horizontal"
+                        android:inputType="number"
+                        android:text="10"
+                        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- Category Tabs -->
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/categoryTabLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorSecondaryContainer"
+                app:tabMode="scrollable"
+                app:tabIndicatorColor="?attr/colorPrimary"
+                app:tabSelectedTextColor="?attr/colorPrimary"
+                app:tabTextColor="?attr/colorOnSecondaryContainer" />
+
+        </LinearLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Results Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Results RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/resultsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp"
+            android:visibility="gone" />
+
+        <!-- No Results Message -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/noResultsCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer"
+            app:cardCornerRadius="50dp"
+            app:cardElevation="0dp">
+
+            <TextView
+                android:id="@+id/noResultsTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingStart="32dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="32dp"
+                android:paddingBottom="12dp"
+                android:text="@string/no_results"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textColor="?attr/colorOnSecondaryContainer" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Loading Indicator -->
+        <FrameLayout
+            android:id="@+id/loadingContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loadingProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:indeterminate="true" />
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
