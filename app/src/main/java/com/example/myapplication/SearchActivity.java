@@ -43,6 +43,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import retrofit2.Call;
@@ -1044,6 +1045,17 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                                 // Store all events for client-side filtering
                                 allEvents = new ArrayList<>(events);
                                 
+                                // Sort events by date: dateTime -> localDate -> date -> empty string
+                                allEvents.sort((e1, e2) -> {
+                                    String date1 = getEventSortDate(e1);
+                                    String date2 = getEventSortDate(e2);
+                                    // Compare dates (empty strings will sort last)
+                                    if (date1.isEmpty() && date2.isEmpty()) return 0;
+                                    if (date1.isEmpty()) return 1;
+                                    if (date2.isEmpty()) return -1;
+                                    return date1.compareTo(date2);
+                                });
+                                
                                 // Apply current category filter
                                 filterEventsByCategory(selectedCategory);
                             } else {
@@ -1066,6 +1078,53 @@ public class SearchActivity extends AppCompatActivity implements EventsAdapter.O
                         showError();
                     }
                 });
+    }
+    
+    /**
+     * Get the sort date for an event based on priority:
+     * 1. event.dates?.start?.dateTime
+     * 2. event.dates?.start?.localDate
+     * 3. event.date (if exists - checked via reflection)
+     * 4. empty string (fallback)
+     */
+    private String getEventSortDate(Event event) {
+        if (event == null) {
+            return "";
+        }
+        
+        // Priority 1: event.dates?.start?.dateTime
+        if (event.getDates() != null && event.getDates().getStart() != null) {
+            String dateTime = event.getDates().getStart().getDateTime();
+            if (dateTime != null && !dateTime.isEmpty()) {
+                return dateTime;
+            }
+        }
+        
+        // Priority 2: event.dates?.start?.localDate
+        if (event.getDates() != null && event.getDates().getStart() != null) {
+            String localDate = event.getDates().getStart().getLocalDate();
+            if (localDate != null && !localDate.isEmpty()) {
+                return localDate;
+            }
+        }
+        
+        // Priority 3: event.date (if exists - using reflection to check)
+        try {
+            java.lang.reflect.Field dateField = Event.class.getDeclaredField("date");
+            dateField.setAccessible(true);
+            Object dateValue = dateField.get(event);
+            if (dateValue != null) {
+                String dateStr = dateValue.toString();
+                if (!dateStr.isEmpty()) {
+                    return dateStr;
+                }
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // Field doesn't exist, continue to fallback
+        }
+        
+        // Priority 4: empty string (fallback)
+        return "";
     }
     
     /**
